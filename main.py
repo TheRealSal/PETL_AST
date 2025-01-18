@@ -56,7 +56,7 @@ def get_args_parser():
     parser.add_argument('--reduction_rate_adapter', type= int, default= 96)
     parser.add_argument('--adapter_type', type= str, default = 'Pfeiffer', choices = ['Houlsby', 'Pfeiffer'])
     parser.add_argument('--apply_residual', type= bool, default=False)
-    parser.add_argument('--adapter_block', type= str, default='conformer', choices = ['bottleneck', 'conformer'])
+    parser.add_argument('--adapter_block', type= str, default='conformer', choices = ['bottleneck', 'conformer','mamba','mamba_2', 'conv_mamba','mamba_pair','point_depth_mamba','bi_mamba', 'bi_mamba_regularconv'])
     parser.add_argument('--kernel_size', type= int, default=31,)
 
     # Params for adapter ablation studies.
@@ -68,7 +68,7 @@ def get_args_parser():
     parser.add_argument('--reduction_rate_moa', type= int, default= 128) 
     parser.add_argument('--adapter_type_moa', type= str, default= 'Pfeiffer', choices = ['Houlsby', 'Pfeiffer'])
     parser.add_argument('--location_moa', type = str, default='MHSA', choices = ['MHSA','FFN'])
-    parser.add_argument('--adapter_module_moa', type= str, default= 'bottleneck', choices = ['bottleneck', 'conformer'])
+    parser.add_argument('--adapter_module_moa', type= str, default= 'bottleneck', choices = ['bottleneck', 'conformer','mamba','mamba_2', 'conv_mamba','point_depth_mamba'])
     parser.add_argument('--num_adapters', type= int, default= 7)
     parser.add_argument('--num_slots', type = int, default= 1)
     parser.add_argument('--normalize', type = bool, default= False)
@@ -95,12 +95,20 @@ def get_args_parser():
     parser.add_argument('--few_shot_samples', default = 64)
     
     # WANDB args. 
-    parser.add_argument('--use_wandb', type= bool, default= False)
-    parser.add_argument('--project_name', type= str, default= '')
+    parser.add_argument('--use_wandb', type= bool, default= True)
+    parser.add_argument('--project_name', type= str, default= 'ASTAdapter')
     parser.add_argument('--exp_name', type= str, default= '')
-    parser.add_argument('--entity', type= str, default= '')
+    parser.add_argument('--entity', type= str, default= 'salmanhussainali03-concordia-university')
     
     return parser
+
+def get_wandb_config(args):
+    return {
+        key: getattr(args, key)
+        for key in vars(args)
+        if not key.startswith('_') and key not in ['use_wandb', 'project_name', 'exp_name', 'entity']
+    }
+
 
 def main(args):
     
@@ -108,6 +116,7 @@ def main(args):
     
     if args.use_wandb:
         wandb.init(project= args.project_name, name= args.exp_name,  entity= args.entity,
+                    tags=[args.dataset_name, args.seq_or_par], config = get_wandb_config(args)
                    )
     print(args) 
     
@@ -134,7 +143,7 @@ def main(args):
         max_len_AST = train_params['max_len_AST_ESC']
         num_classes = train_params['num_classes_ESC']
         batch_size = train_params['batch_size_ESC']
-        epochs = train_params['epochs_ESC']
+        epochs = train_params['epochs_ESC_AST']
     elif args.dataset_name == 'urbansound8k':
         max_len_AST = train_params['max_len_AST_US8K']
         num_classes = train_params['num_classes_US8K']
@@ -183,7 +192,8 @@ def main(args):
         speaker_id_val = ['F', 'M', 'F', 'M', 'F', 'M', 'F', 'M', 'F', 'M']
         speaker_id_test = ['M', 'F', 'M', 'F', 'M', 'F', 'M', 'F', 'M', 'F']
 
-    
+   
+    print("Loading dataset")
     for fold in range(0,fold_number):
         
         # DATASETS
@@ -219,7 +229,7 @@ def main(args):
         # MODEL definition.
         
         method = args.method
-        
+        print("Loading Model") 
         if args.is_AST:
 
             if args.is_adapter_ablation:
@@ -305,7 +315,8 @@ def main(args):
             
         criterion = torch.nn.CrossEntropyLoss()
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, len(train_loader)*(epochs))
-
+        
+        print(f"Learning Rate: {lr}")
         print(f"Start training for {epochs} epochs")
         
         best_acc = 0.
@@ -345,7 +356,9 @@ def main(args):
         
         accuracy_folds.append(test_acc)
         
-    
+    if args.use_wandb:
+        wandb.log({f"Avg Accuracy over {fold_number} folds": np.mean(accuracy_folds), f"Std accuracy over the {fold_number} fold(s): ": np.std(accuracy_folds)})
+
     print("Folds accuracy: ", accuracy_folds)
     print(f"Avg accuracy over the {fold_number} fold(s): ", np.mean(accuracy_folds))
     print(f"Std accuracy over the {fold_number} fold(s): ", np.std(accuracy_folds))
