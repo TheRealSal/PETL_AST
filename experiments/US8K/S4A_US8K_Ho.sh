@@ -11,7 +11,7 @@ source $HOME/Adapters/PETL_AST/newenv/bin/activate
 
 scp $HOME/projects/def-ravanelm/datasets/UrbanSound8k.tar.gz $SLURM_TMPDIR/  
 cd $SLURM_TMPDIR  
-mkdir UrbanSound8k && tar -zxf UrbanSound8k.tar.gz -C UrbanSound8k
+mkdir UrbanSound8k && tar -zxf UrbanSound8k.tar.gz -C UrbanSound8K
 cd $HOME/Adapters/PETL_AST/
 
 seeds=(10 3768427010 3721728231 2148699938 3169696615)
@@ -29,7 +29,7 @@ for seed in "${seeds[@]}"; do
         --data_path "$SLURM_TMPDIR" \
         --adapter_block "S4A" \
 	    --adapter_type "Houlsby" \
-	    --dataset_name "GSC" \
+	    --dataset_name "urbansound8k" \
         --seed "$seed" 
 
     echo "Run completed for seed $seed"
