@@ -27,7 +27,7 @@ for seed in "${seeds[@]}"; do
         --data_path "$SLURM_TMPDIR" \
         --adapter_block "S4A" \
 	    --adapter_type "Pfeiffer" \
-	    --dataset_name "GSC" \
+	    --dataset_name "FSC" \
         --seed "$seed" 
 
     echo "Run completed for seed $seed"
