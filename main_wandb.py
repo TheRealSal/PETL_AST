@@ -108,7 +108,7 @@ def get_wandb_config():
     }
 
 
-os.environ["WANDB_MODE"] = "offline"
+# os.environ["WANDB_MODE"] = "offline"
 os.environ["WANDB_ENTITY"] = "salmanhussainali03-concordia-university"
 
 def train(sweep_config=None):
@@ -243,9 +243,8 @@ def train(sweep_config=None):
                                 model_ckpt=args.model_ckpt_AST, mamba_config=mamba_config, cache_dir=args.cache_dir).to(device)
                 lr = config["learning_rate"]
             if args.method == "LoRA":
-                model = AST_LoRA(max_length= max_len_AST, num_classes= num_classes, final_output= final_output, rank= args.reduction_rate_lora, alpha= args.alpha_lora, model_ckpt= args.model_ckpt_AST).to(device)
+                model = AST_LoRA(max_length= max_len_AST, num_classes= num_classes, final_output= final_output, rank=6, alpha=16, model_ckpt= args.model_ckpt_AST).to(device)
                 lr = train_params['lr_LoRA']
-            #lr = train_params['lr_adapter']
 
             # PRINT MODEL PARAMETERS
             if fold == 0:
